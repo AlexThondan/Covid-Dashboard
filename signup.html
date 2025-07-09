@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Signup | COVID-19 Dashboard</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Times+New+Roman&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #080710;
+            font-family: 'Libre Baskerville', 'Times New Roman', serif;
+            background-image: url('https://images.unsplash.com/photo-1584118624012-df056829fbd0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1932&q=80'); /* COVID-19 related image */
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .background {
+            width: 430px;
+            height: 520px;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            top: 50%;
+        }
+
+        .background .shape {
+            height: 200px;
+            width: 200px;
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .shape:first-child {
+            background: linear-gradient(#1845ad, #23a2f6);
+            left: -80px;
+            top: -80px;
+        }
+
+        .shape:last-child {
+            background: linear-gradient(to right, #ff512f, #f09819);
+            right: -30px;
+            bottom: -80px;
+        }
+
+        form {
+            height: 500px; /* Reduced height to make it more square-like */
+            width: 400px; /* Width remains the same */
+            background-color: rgba(255, 255, 255, 0.13);
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            border-radius: 20px; /* Rounded corners */
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 40px rgba(8, 7, 16, 0.6);
+            padding: 30px 35px; /* Adjusted padding */
+        }
+
+        form h3 {
+            font-size: 28px; /* Slightly smaller font size */
+            font-weight: 700;
+            line-height: 36px; /* Adjusted line height */
+            text-align: center;
+            color: white;
+            margin-bottom: 15px; /* Reduced margin */
+        }
+
+        label {
+            display: block;
+            margin-top: 15px; /* Reduced margin */
+            font-size: 14px; /* Slightly smaller font size */
+            color: white;
+        }
+
+        input {
+            display: block;
+            height: 45px; /* Reduced height */
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.07);
+            border-radius: 10px; /* Slightly rounded corners */
+            padding: 0 12px; /* Adjusted padding */
+            margin-top: 6px; /* Reduced margin */
+            font-size: 14px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #23a2f6;
+            box-shadow: 0 0 10px rgba(35, 162, 246, 0.5);
+        }
+
+        input::placeholder {
+            color: #e5e5e5;
+        }
+
+        button {
+            margin-top: 25px; /* Reduced margin */
+            width: 100%;
+            background-color: #ffffff;
+            color: #080710;
+            padding: 12px 0; /* Adjusted padding */
+            font-size: 16px; /* Slightly smaller font size */
+            font-weight: 600;
+            border-radius: 10px; /* Slightly rounded corners */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            font-family: 'Libre Baskerville', 'Times New Roman', serif;
+        }
+
+        button:hover {
+            background-color: #23a2f6;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        p {
+            margin-top: 15px;
+            text-align: center;
+            color: white;
+            font-size: 14px; /* Slightly smaller font size */
+        }
+
+        a {
+            color: #23a2f6;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #1845ad;
+        }
+
+        #signup-error {
+            color: #ff6b6b;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px; /* Slightly smaller font size */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background">
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <form id="signupForm">
+        <h3>Signup Here</h3>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Enter Email" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter Password" required>
+
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+
+        <button type="submit">Sign Up</button>
+
+        <p>Already have an account? <a href="login.html">Login Here</a></p>
+
+        <p id="signup-error"></p>
+    </form>
+
+    <script>
+        document.getElementById("signupForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorElement = document.getElementById('signup-error');
+
+            errorElement.innerText = ""; // Clear previous errors
+
+            if (password !== confirmPassword) {
+                errorElement.innerText = "Passwords do not match!";
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Signup Successful! Please login.');
+                    window.location.href = 'login.html'; // Redirect to Login Page
+                } else {
+                    errorElement.innerText = data.error || 'Signup failed!';
+                }
+            } catch (error) {
+                console.error('Signup Error:', error);
+                errorElement.innerText = 'Something went wrong. Please try again later.';
+            }
+        });
+    </script>
+</body>
+
+</html>

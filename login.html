@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Login | COVID-19 Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Times+New+Roman&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: 'Libre Baskerville', 'Times New Roman', serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-image: url('https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?ixlib=rb-1.2.1&auto=format&fit=crop&w=1489&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 10%, transparent 10.01%);
+            background-size: 20px 20px;
+            animation: moveBackground 10s linear infinite;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 100% 100%;
+            }
+        }
+
+        form {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        form * {
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            outline: none;
+            border: none;
+        }
+
+        form h3 {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 42px;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        input {
+            height: 50px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 0 15px;
+            margin-top: 8px;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #23a2f6;
+            box-shadow: 0 0 10px rgba(35, 162, 246, 0.5);
+        }
+
+        ::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        button {
+            margin-top: 40px;
+            width: 100%;
+            background: white;
+            color: black;
+            font-family: 'Times New Roman', serif;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #1845ad, #23a2f6);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        a {
+            color: blue;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #1845ad;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background"></div>
+
+    <form id="loginForm" class="floating">
+        <h3>Login Here</h3>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Enter Email" required autocomplete="off" autofocus>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Password" required autocomplete="new-password">
+
+        <button type="submit" id="loginButton">Log In</button>
+
+        <p>Don't have an account? <a href="signup.html">Create an account</a></p>
+
+        <p id="login-error"></p>
+    </form>
+    <script src="script.js"></script>
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+    
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('login-error');
+    
+            errorElement.innerText = ""; // Clear previous errors
+    
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+    
+                const data = await response.json();
+    
+                if (response.ok) {
+                    localStorage.setItem('token', data.token); // Store token
+                    console.log('Login successful, redirecting to dashboard...');
+                    window.location.href = 'dashboard.html'; // Redirect to Dashboard Page
+                } else {
+                    errorElement.innerText = data.message || 'Login failed!';
+                }
+            } catch (error) {
+                console.error('Login Error:', error);
+                errorElement.innerText = 'Something went wrong. Please try again later.';
+            }
+        });
+    </script>
+    
+</body>
+
+</html>

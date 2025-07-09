@@ -1,0 +1,23 @@
+### Signup User
+POST http://localhost:5000/auth/signup
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Login User (Get JWT Token)
+POST http://localhost:5000/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Access Dashboard (With Token)
+GET http://localhost:5000/covid-data
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YWNkNDFhNWI4ZTA4Njg0YjNmYzM1YyIsImlhdCI6MTczOTM4MDMwOSwiZXhwIjoxNzM5MzgzOTA5fQ.jCpKdVCecI_hscb30jFIsW7YtSkYNlLG6P_0fZuKtbg
+

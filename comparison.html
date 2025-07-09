@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>COVID-19 Comparison | India Insights</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f9fafb, #e5e7eb);
+            height: 100vh;
+            font-family: 'Baskerville', 'Times New Roman', serif;
+            overflow: hidden;
+            color: #1f2937;
+            margin: 0;
+            font-size: 1.1rem; /* Increased base font size */
+        }
+        .dashboard {
+            display: flex;
+            height: 100vh;
+            background: transparent;
+        }
+        .sidebar {
+            width: 200px;
+            background: #ffffff;
+            padding: 20px 10px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            position: fixed;
+            height: 100%;
+            z-index: 10;
+        }
+        .sidebar label {
+            font-weight: 500;
+            color: #4b5563;
+            font-size: 1rem; /* Increased label font size */
+        }
+        .sidebar select {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            width: 100%;
+            font-size: 0.95rem; /* Increased select font size */
+            color: #1f2937;
+            transition: all 0.3s ease;
+        }
+        .sidebar select:hover {
+            border-color: #9ca3af;
+        }
+        .sidebar select:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        .metric-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        .metric-select {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            width: 100%;
+            font-size: 0.95rem; /* Increased dropdown font size */
+            color: #1f2937;
+            cursor: pointer;
+        }
+        .metric-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            z-index: 20;
+        }
+        .metric-options label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.85rem; /* Increased checkbox label font size */
+            padding: 2px 0;
+        }
+        .metric-options input[type="checkbox"] {
+            accent-color: #10b981;
+            width: 16px;
+            height: 16px;
+        }
+        .enter-btn {
+            padding: 8px;
+            color: #ffffff;
+            background: #10b981;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem; /* Increased button font size */
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .enter-btn:hover {
+            background: #059669;
+            transform: scale(1.05);
+        }
+        .topbar {
+            width: calc(100% - 200px);
+            background: #ffffff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 200px;
+            z-index: 10;
+            height: 50px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .topbar h3 {
+            font-size: 1.5rem; /* Increased header font size */
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+        .topbar button {
+            padding: 8px 14px;
+            color: #1f2937;
+            background: #e5e7eb;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem; /* Increased button font size */
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .topbar button:hover {
+            background: #d1d5db;
+            transform: scale(1.05);
+        }
+        .main-content {
+            margin-left: 200px;
+            padding: 60px 20px 10px;
+            width: calc(100% - 200px);
+            height: calc(100vh - 60px);
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+        .chart-container {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 6px;
+            flex-grow: 1;
+        }
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+        .insight-box, .metric-breakdown-box, .quick-stats-box {
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .insight-box {
+            height: 30%;
+            min-height: 30%;
+            max-height: 30%;
+        }
+        .metric-breakdown-box {
+            height: 50%;
+            min-height: 50%;
+            max-height: 50%;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+        .metric-breakdown-box.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            padding: 20px;
+            margin: 0;
+            border-radius: 0;
+        }
+        .quick-stats-box {
+            height: 20%;
+            min-height: 20%;
+            max-height: 20%;
+        }
+        .insight-box h4, .metric-breakdown-box h4, .quick-stats-box h4 {
+            font-size: 1rem; /* Increased section header font size */
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 6px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .insight-box ul, .quick-stats-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .insight-box li, .quick-stats-box li {
+            font-size: 0.85rem; /* Increased list item font size */
+            color: #4b5563;
+            line-height: 1.2;
+            padding: 3px 6px;
+            background: #f9fafb;
+            border-radius: 4px;
+            margin: 3px 0;
+            position: relative;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .insight-box li:before, .quick-stats-box li:before {
+            content: '■';
+            color: #10b981;
+            font-size: 0.85rem;
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .metric-breakdown-box canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 150px;
+            }
+            .topbar, .main-content {
+                width: calc(100% - 150px);
+                margin-left: 150px;
+            }
+            .content-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .chart-container {
+                height: 40vh;
+                min-height: 40vh;
+                max-height: 40vh;
+            }
+            .right-column {
+                height: auto;
+            }
+            .insight-box {
+                height: 20vh;
+                min-height: 20vh;
+                max-height: 20vh;
+            }
+            .metric-breakdown-box {
+                height: 30vh;
+                min-height: 30vh;
+                max-height: 30vh;
+            }
+            .quick-stats-box {
+                height: 15vh;
+                min-height: 15vh;
+                max-height: 15vh;
+            }
+        }
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding: 10px;
+            }
+            .topbar, .main-content {
+                width: 100%;
+                margin-left: 0;
+            }
+            .topbar {
+                padding: 8px;
+                height: auto;
+                flex-wrap: wrap;
+            }
+            .topbar h3 {
+                font-size: 1.2rem;
+            }
+            .content-grid {
+                height: auto;
+            }
+            .chart-container {
+                height: 30vh;
+                min-height: 30vh;
+                max-height: 30vh;
+            }
+            .insight-box {
+                height: 15vh;
+                min-height: 15vh;
+                max-height: 15vh;
+            }
+            .metric-breakdown-box {
+                height: 25vh;
+                min-height: 25vh;
+                max-height: 25vh;
+            }
+            .quick-stats-box {
+                height: 10vh;
+                min-height: 10vh;
+                max-height: 10vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="sidebar">
+            <label for="state1">State 1:</label>
+            <select id="state1"><option value="">Select State</option></select>
+            <label for="state2">State 2:</label>
+            <select id="state2"><option value="">Select State</option></select>
+            <label for="state3">State 3 (Optional):</label>
+            <select id="state3"><option value="">Select State</option></select>
+            <label>Metrics:</label>
+            <div class="metric-dropdown">
+                <div class="metric-select" id="metric-select">Select Metrics</div>
+                <div class="metric-options" id="metric-options">
+                    <label><input type="checkbox" value="Deaths" checked> Deaths</label>
+                    <label><input type="checkbox" value="Cure Rate" checked> Cure Rate</label>
+                    <label><input type="checkbox" value="Vaccinated Deaths" checked> Vaccinated Deaths</label>
+                    <label><input type="checkbox" value="Affected Rate" checked> Affected Rate</label>
+                </div>
+            </div>
+            <button class="enter-btn" onclick="updateComparisonChart()">Enter</button>
+        </div>
+        <div class="topbar">
+            <button onclick="window.history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <h3>State Comparison</h3>
+            <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+        <div class="main-content">
+            <div class="content-grid">
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                <div class="right-column">
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul id="comparison-insights">
+                            <li id="insight-1"></li>
+                            <li id="insight-2"></li>
+                            <li id="insight-3"></li>
+                            <li id="insight-4"></li>
+                        </ul>
+                    </div>
+                    <div class="metric-breakdown-box" id="metric-breakdown-box">
+                        <h4>Metric Breakdown</h4>
+                        <canvas id="breakdownChart"></canvas>
+                    </div>
+                    <div class="quick-stats-box">
+                        <h4>Quick Stats</h4>
+                        <ul id="quick-stats">
+                            <li id="quick-1"></li>
+                            <li id="quick-2"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        let comparisonChart, breakdownChart;
+        let csvData = [];
+        let isFullscreen = false;
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Toggle metric options visibility
+        document.getElementById('metric-select').addEventListener('click', () => {
+            const options = document.getElementById('metric-options');
+            options.style.display = options.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Close metric options when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.querySelector('.metric-dropdown');
+            if (!dropdown.contains(e.target)) {
+                document.getElementById('metric-options').style.display = 'none';
+            }
+        });
+
+        // Toggle fullscreen for pie chart
+        document.getElementById('metric-breakdown-box').addEventListener('click', () => {
+            const breakdownBox = document.getElementById('metric-breakdown-box');
+            if (!isFullscreen) {
+                breakdownBox.classList.add('fullscreen');
+                breakdownChart.resize();
+            } else {
+                breakdownBox.classList.remove('fullscreen');
+                breakdownChart.resize();
+            }
+            isFullscreen = !isFullscreen;
+        });
+
+        function loadCSVData() {
+            Papa.parse('/COVID19_India_Updated_Deaths.csv', {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    csvData = results.data;
+                    populateDropdowns();
+                },
+                error: function (error) {
+                    console.error('Error loading CSV:', error);
+                    alert('Failed to load the CSV file.');
+                }
+            });
+        }
+
+        function populateDropdowns() {
+            const states = [...new Set(csvData.map(row => row['State/UT']))].sort();
+            ['state1', 'state2', 'state3'].forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Select State</option>';
+                states.forEach(state => select.add(new Option(state, state)));
+            });
+        }
+
+        function getSelectedMetrics() {
+            const checkboxes = document.querySelectorAll('#metric-options input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function updateComparisonChart() {
+            if (!csvData.length) return;
+
+            const state1 = document.getElementById('state1').value;
+            const state2 = document.getElementById('state2').value;
+            const state3 = document.getElementById('state3').value;
+            const selectedStates = [state1, state2, state3].filter(s => s);
+
+            if (selectedStates.length < 2) {
+                if (comparisonChart) comparisonChart.destroy();
+                if (breakdownChart) breakdownChart.destroy();
+                document.getElementById('insight-1').textContent = 'Select at least 2 states';
+                document.getElementById('insight-2').textContent = '';
+                document.getElementById('insight-3').textContent = '';
+                document.getElementById('insight-4').textContent = '';
+                document.getElementById('quick-1').textContent = '';
+                document.getElementById('quick-2').textContent = '';
+                return;
+            }
+
+            const selectedMetrics = getSelectedMetrics();
+            if (selectedMetrics.length === 0) {
+                if (comparisonChart) comparisonChart.destroy();
+                if (breakdownChart) breakdownChart.destroy();
+                document.getElementById('insight-1').textContent = 'Select at least one metric';
+                document.getElementById('insight-2').textContent = '';
+                document.getElementById('insight-3').textContent = '';
+                document.getElementById('insight-4').textContent = '';
+                document.getElementById('quick-1').textContent = '';
+                document.getElementById('quick-2').textContent = '';
+                return;
+            }
+
+            const metrics = {
+                Deaths: [],
+                'Vaccinated Deaths': [],
+                'Cure Rate': [],
+                'Affected Rate': []
+            };
+
+            selectedStates.forEach(state => {
+                const stateData = csvData.filter(row => row['State/UT'] === state);
+                const totalDeaths = stateData.reduce((sum, row) => sum + parseInt(row['Deaths'] || 0), 0);
+                const vaccinatedDeaths = stateData.reduce((sum, row) => sum + parseInt(row['Vaccinated Deaths'] || 0), 0);
+                const totalCases = stateData.reduce((sum, row) => sum + parseInt(row['Total Cases'] || 0), 0);
+                const cured = totalCases - totalDeaths;
+                const population = stateData.reduce((sum, row) => sum + parseInt(row['Total Population in Age Group'] || 0), 0);
+                metrics.Deaths.push(totalDeaths);
+                metrics['Vaccinated Deaths'].push(vaccinatedDeaths);
+                metrics['Cure Rate'].push((cured / totalCases * 100).toFixed(2));
+                metrics['Affected Rate'].push((totalCases / population * 100).toFixed(2));
+            });
+
+            // Update Main Chart
+            if (comparisonChart) comparisonChart.destroy();
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            const datasets = selectedMetrics.map(metric => {
+                let backgroundColor;
+                switch (metric) {
+                    case 'Deaths': backgroundColor = '#10b981'; break;
+                    case 'Vaccinated Deaths': backgroundColor = '#ef4444'; break;
+                    case 'Cure Rate': backgroundColor = '#8b5cf6'; break;
+                    case 'Affected Rate': backgroundColor = '#f59e0b'; break;
+                }
+                return {
+                    label: metric + (metric === 'Cure Rate' || metric === 'Affected Rate' ? ' (%)' : ''),
+                    data: metrics[metric],
+                    backgroundColor: backgroundColor,
+                    borderRadius: 8,
+                    borderSkipped: false
+                };
+            });
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: selectedStates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: {
+                        datalabels: { display: false },
+                        tooltip: { 
+                            backgroundColor: '#1f2937', 
+                            titleFont: { size: 12, family: 'Baskerville' }, /* Increased tooltip font */
+                            bodyFont: { size: 10, family: 'Baskerville' }, 
+                            padding: 6 
+                        },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 10, family: 'Baskerville' }, /* Increased legend font */
+                                color: '#1f2937',
+                                padding: 5,
+                                boxWidth: 10
+                            } 
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { 
+                                color: '#1f2937', 
+                                font: { size: 10, family: 'Baskerville' }, /* Increased tick font */
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 3
+                            } 
+                        },
+                        y: { 
+                            grid: { color: '#e5e7eb' }, 
+                            ticks: { 
+                                color: '#1f2937', 
+                                font: { size: 10, family: 'Baskerville' }, /* Increased tick font */
+                                maxTicksLimit: 5
+                            }, 
+                            beginAtZero: true 
+                        }
+                    },
+                    layout: {
+                        padding: { top: 10, bottom: 10, left: 10, right: 10 }
+                    }
+                }
+            });
+
+            // Update Insights
+            document.getElementById('insight-1').textContent = '';
+            document.getElementById('insight-2').textContent = '';
+            document.getElementById('insight-3').textContent = '';
+            document.getElementById('insight-4').textContent = '';
+
+            let insightIndex = 1;
+            if (selectedMetrics.includes('Deaths')) {
+                const maxDeathsIdx = metrics.Deaths.indexOf(Math.max(...metrics.Deaths));
+                document.getElementById(`insight-${insightIndex++}`).textContent = `${selectedStates[maxDeathsIdx]}: Highest deaths (${metrics.Deaths[maxDeathsIdx].toLocaleString()})`;
+            }
+            
+            if (selectedMetrics.includes('Cure Rate')) {
+                document.getElementById(`insight-${insightIndex++}`).textContent = `Avg Cure Rate: ${(metrics['Cure Rate'].reduce((a, b) => +a + +b, 0) / metrics['Cure Rate'].length).toFixed(2)}%`;
+            }
+            if (selectedMetrics.includes('Vaccinated Deaths') && selectedMetrics.includes('Deaths')) {
+                document.getElementById(`insight-${insightIndex++}`).textContent = `Vaccination reduces deaths by ~${((metrics.Deaths.reduce((a, b) => a + b, 0) - metrics['Vaccinated Deaths'].reduce((a, b) => a + b, 0)) / metrics.Deaths.reduce((a, b) => a + b, 0) * 100).toFixed(1)}%`;
+            }
+
+            // Update Breakdown Chart (Pie Chart)
+            if (breakdownChart) breakdownChart.destroy();
+            const breakdownCtx = document.getElementById('breakdownChart').getContext('2d');
+            breakdownChart = new Chart(breakdownCtx, {
+                type: 'pie',
+                data: {
+                    labels: selectedMetrics,
+                    datasets: [{
+                        data: selectedMetrics.map(metric => metrics[metric][0]), // Using first state's data
+                        backgroundColor: ['#10b981', '#ef4444', '#8b5cf6', '#f59e0b'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 10, family: 'Baskerville' }, /* Increased legend font */
+                                color: '#1f2937',
+                                boxWidth: 8,
+                                padding: 2
+                            } 
+                        }
+                    },
+                    layout: {
+                        padding: { top: 10, bottom: 10, left: 10, right: 10 }
+                    }
+                }
+            });
+
+            // Update Quick Stats
+            const allMetrics = csvData.map(row => {
+                const totalDeaths = parseInt(row['Deaths'] || 0);
+                const totalCases = parseInt(row['Total Cases'] || 0);
+                const population = parseInt(row['Total Population in Age Group'] || 0);
+                return { state: row['State/UT'], affectedRate: (totalCases / population * 100).toFixed(2) };
+            });
+            const sortedByAffected = allMetrics.sort((a, b) => b.affectedRate - a.affectedRate);
+            document.getElementById('quick-1').textContent = `Highest Affected Rate (All): ${sortedByAffected[0].state} (${sortedByAffected[0].affectedRate}%)`;
+            document.getElementById('quick-2').textContent = `Lowest Affected Rate (All): ${sortedByAffected[sortedByAffected.length - 1].state} (${sortedByAffected[sortedByAffected.length - 1].affectedRate}%)`;
+        }
+
+        window.onload = function () {
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+            } else {
+                loadCSVData();
+            }
+        };
+    </script>
+</body>
+</html>

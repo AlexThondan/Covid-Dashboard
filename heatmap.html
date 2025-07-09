@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>COVID-19 Insights | INDIA INSIGHTS </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f9fafb, #e5e7eb);
+            height: 100vh;
+            font-family: 'Baskerville', 'Times New Roman', serif;
+            overflow: hidden;
+            color: #1f2937;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .dashboard {
+            display: flex;
+            height: 100vh;
+            background: transparent;
+        }
+        .sidebar {
+            width: 200px;
+            background: #ffffff;
+            padding: 20px 10px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            position: fixed;
+            height: 100%;
+            z-index: 10;
+        }
+        .sidebar label {
+            font-weight: 500;
+            color: #4b5563;
+            font-size: 1rem;
+        }
+        .sidebar select {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            width: 100%;
+            font-size: 0.95rem;
+            color: #1f2937;
+            transition: all 0.3s ease;
+        }
+        .sidebar select:hover {
+            border-color: #9ca3af;
+        }
+        .sidebar select:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        .enter-btn {
+            padding: 8px;
+            color: #ffffff;
+            background: #10b981;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .enter-btn:hover {
+            background: #059669;
+            transform: scale(1.05);
+        }
+        .topbar {
+            width: calc(100% - 200px);
+            background: #ffffff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 200px;
+            z-index: 10;
+            height: 50px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .topbar h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .topbar button {
+            padding: 8px 14px;
+            color: #1f2937;
+            background: #e5e7eb;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .topbar button:hover {
+            background: #d1d5db;
+            transform: scale(1.05);
+        }
+        .main-content {
+            margin-left: 200px;
+            padding: 60px 20px 10px;
+            width: calc(100% - 200px);
+            height: calc(100vh - 60px);
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+        .map-container {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            background: #f8fafc;
+        }
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+        .insight-box {
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            overflow-y: auto;
+        }
+        .insight-box h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 6px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .insight-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .insight-box li {
+            font-size: 0.85rem;
+            color: #4b5563;
+            line-height: 1.2;
+            padding: 3px 6px;
+            background: #f9fafb;
+            border-radius: 4px;
+            margin: 3px 0;
+            position: relative;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .insight-box li:before {
+            content: '■';
+            color: #10b981;
+            font-size: 0.85rem;
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .popup-content {
+            font-size: 0.9rem;
+            color: #1f2937;
+            font-family: 'Baskerville', 'Times New Roman', serif;
+        }
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 150px;
+            }
+            .topbar, .main-content {
+                width: calc(100% - 150px);
+                margin-left: 150px;
+            }
+            .content-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .map-container {
+                height: 50vh;
+                min-height: 50vh;
+                max-height: 50vh;
+            }
+            .insight-box {
+                height: 30vh;
+                min-height: 30vh;
+                max-height: 30vh;
+            }
+        }
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding: 10px;
+            }
+            .topbar, .main-content {
+                width: 100%;
+                margin-left: 0;
+            }
+            .topbar {
+                padding: 8px;
+                height: auto;
+                flex-wrap: wrap;
+            }
+            .topbar h3 {
+                font-size: 1.2rem;
+                position: static;
+                transform: none;
+                text-align: center;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            .content-grid {
+                height: auto;
+            }
+            .map-container {
+                height: 40vh;
+                min-height: 40vh;
+                max-height: 40vh;
+            }
+            .insight-box {
+                height: 25vh;
+                min-height: 25vh;
+                max-height: 25vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="sidebar">
+            <label for="metric">Select Metric:</label>
+            <select id="metric">
+                <option value="affected">Affected Rate</option>
+                <option value="vaccination">Vaccination Impact</option>
+                <option value="cure">Cure Rate</option>
+                <option value="deaths">Deaths</option>
+            </select>
+            <label for="ageGroup">Select Age Group:</label>
+            <select id="ageGroup">
+                <option value="all">All Ages</option>
+                <option value="0-18">0-18</option>
+                <option value="19-30">19-30</option>
+                <option value="31-45">31-45</option>
+                <option value="46-60">46-60</option>
+                <option value="60+">60+</option>
+            </select>
+            <button class="enter-btn" onclick="updateHeatmap()">Update</button>
+        </div>
+        <div class="topbar">
+            <button onclick="window.location.href='dashboard.html'"><i class="fas fa-arrow-left"></i> Back</button>
+            <h3>India Insights</h3>
+            <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+        <div class="main-content">
+            <div class="content-grid">
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+                <div class="right-column">
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul id="heatmap-insights">
+                            <li id="insight-1"></li>
+                            <li id="insight-2"></li>
+                            <li id="insight-3"></li>
+                            <li id="insight-4"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map, indiaOutline, heatmapLayers = [], csvData = [];
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        function loadCSVData() {
+            Papa.parse('/COVID19_India_Updated_Deaths.csv', {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    csvData = results.data;
+                    initMap();
+                },
+                error: function (error) {
+                    console.error('Error loading CSV:', error);
+                    alert('Failed to load the CSV file.');
+                }
+            });
+        }
+
+        function initMap() {
+            if (map) return;
+            map = L.map('map').setView([20.5937, 78.9629], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            const indiaCoords = [
+                [34.5, 74], [31, 77], [29, 80], [25, 88], [22, 92], 
+                [17, 84], [12, 78], [8, 77], [13, 74], [18, 73], 
+                [22, 72], [25, 70], [28, 72], [32, 74], [34.5, 74]
+            ];
+            indiaOutline = L.polyline(indiaCoords, {
+                color: 'black',
+                weight: 2,
+                opacity: 1
+            }).addTo(map);
+
+            updateHeatmap();
+        }
+
+        const stateCoords = {
+            'Andaman and Nicobar Islands': [11.74, 92.6586], 'Andhra Pradesh': [15.9129, 79.74],
+            'Arunachal Pradesh': [28.2180, 94.7278], 'Assam': [26.2006, 92.9376], 'Bihar': [25.0961, 85.3131],
+            'Chandigarh': [30.7333, 76.7794], 'Chhattisgarh': [21.2787, 81.8661], 
+            'Dadra and Nagar Haveli and Daman and Diu': [20.1809, 73.0169], 'Delhi': [28.7041, 77.1025],
+            'Goa': [15.2993, 74.1240], 'Gujarat': [22.2587, 71.1924], 'Haryana': [29.0588, 76.0856],
+            'Himachal Pradesh': [31.1048, 77.1734], 'Jammu and Kashmir': [33.2778, 75.3412],
+            'Jharkhand': [23.6102, 85.2799], 'Karnataka': [15.3173, 75.7139], 'Kerala': [10.8505, 76.2711],
+            'Ladakh': [34.1526, 77.5771], 'Lakshadweep': [10.5667, 72.6417], 'Madhya Pradesh': [23.4733, 77.9470],
+            'Maharashtra': [19.7515, 75.7139], 'Manipur': [24.6637, 93.9063], 'Meghalaya': [25.4670, 91.3662],
+            'Mizoram': [23.1645, 92.9376], 'Nagaland': [26.1584, 94.5624], 'Odisha': [20.9517, 85.0985],
+            'Puducherry': [11.9416, 79.8083], 'Punjab': [31.1471, 75.3412], 'Rajasthan': [27.0238, 74.2179],
+            'Sikkim': [27.5330, 88.5122], 'Tamil Nadu': [11.1271, 78.6569], 'Telangana': [18.1124, 79.0193],
+            'Tripura': [23.9408, 91.9882], 'Uttar Pradesh': [26.8467, 80.9462], 'Uttarakhand': [30.0668, 79.0193],
+            'West Bengal': [22.9868, 87.8550]
+        };
+
+        function calculateMetrics(stateName, ageGroup) {
+            let stateData = csvData.filter(row => row['State/UT'] === stateName);
+            if (ageGroup !== 'all') {
+                stateData = stateData.filter(row => row['Age Group'] === ageGroup);
+            }
+            const totalDeaths = stateData.reduce((sum, row) => sum + parseInt(row['Deaths'] || 0), 0);
+            const vaccinatedDeaths = stateData.reduce((sum, row) => sum + parseInt(row['Vaccinated Deaths'] || 0), 0);
+            const totalCases = stateData.reduce((sum, row) => sum + parseInt(row['Total Cases'] || 0), 0);
+            const population = stateData.reduce((sum, row) => sum + parseInt(row['Total Population in Age Group'] || 0), 0);
+            const cured = totalCases - totalDeaths;
+
+            return {
+                affected: population ? (totalCases / population) * 100 : 0,
+                vaccination: totalDeaths ? (vaccinatedDeaths / totalDeaths) * 100 : 0,
+                cure: totalCases ? (cured / totalCases) * 100 : 0,
+                deaths: totalDeaths
+            };
+        }
+
+        function getColor(value, metric) {
+            let scale, hueStart, hueEnd;
+            switch (metric) {
+                case 'deaths':
+                    scale = [0, 10000]; // Adjusted for realistic death counts
+                    hueStart = 0; // Red
+                    hueEnd = 60; // Yellow
+                    break;
+                case 'affected':
+                    scale = [0, 10]; // Percentage
+                    hueStart = 240; // Blue
+                    hueEnd = 120; // Green
+                    break;
+                case 'vaccination':
+                    scale = [0, 100]; // Percentage
+                    hueStart = 300; // Purple
+                    hueEnd = 180; // Cyan
+                    break;
+                case 'cure':
+                    scale = [0, 100]; // Percentage
+                    hueStart = 120; // Green
+                    hueEnd = 240; // Blue
+                    break;
+                default:
+                    scale = [0, 100];
+                    hueStart = 240;
+                    hueEnd = 0;
+            }
+            const ratio = Math.min(1, Math.max(0, (value - scale[0]) / (scale[1] - scale[0])));
+            const hue = hueStart - ratio * (hueStart - hueEnd);
+            return `hsl(${hue}, 100%, 50%)`;
+        }
+
+        function updateInsights(metric, ageGroup) {
+            const allMetrics = Object.keys(stateCoords).map(state => ({
+                state,
+                ...calculateMetrics(state, ageGroup)
+            }));
+
+            const sortedByMetric = allMetrics.sort((a, b) => b[metric] - a[metric]);
+            const topState = sortedByMetric[0];
+            const avgValue = allMetrics.reduce((sum, m) => sum + m[metric], 0) / allMetrics.length;
+            const minState = sortedByMetric[sortedByMetric.length - 1];
+            const variance = allMetrics.reduce((sum, m) => sum + Math.pow(m[metric] - avgValue, 2), 0) / allMetrics.length;
+
+            document.getElementById('insight-1').textContent = `Top ${metric}: ${topState.state} (${topState[metric].toLocaleString(metric === 'deaths' ? undefined : 2)} ${metric === 'deaths' ? '' : '%'})`;
+            document.getElementById('insight-2').textContent = `Average ${metric}: ${avgValue.toLocaleString(metric === 'deaths' ? undefined : 2)} ${metric === 'deaths' ? '' : '%'}`;
+            document.getElementById('insight-3').textContent = `Lowest ${metric}: ${minState.state} (${minState[metric].toLocaleString(metric === 'deaths' ? undefined : 2)} ${metric === 'deaths' ? '' : '%'})`;
+            document.getElementById('insight-4').textContent = `Variance: ${variance.toFixed(2)} (spread of ${metric})`;
+        }
+
+        function updateHeatmap() {
+            if (!csvData.length) return;
+
+            heatmapLayers.forEach(layer => map.removeLayer(layer));
+            heatmapLayers = [];
+
+            const metric = document.getElementById('metric').value;
+            const ageGroup = document.getElementById('ageGroup').value;
+
+            Object.entries(stateCoords).forEach(([state, coords]) => {
+                const metrics = calculateMetrics(state, ageGroup);
+                const value = metrics[metric];
+                const color = getColor(value, metric);
+
+                const circle = L.circle(coords, {
+                    radius: 100000,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.5,
+                    weight: 1
+                }).addTo(map);
+
+                circle.on('click', () => {
+                    map.flyTo(coords, 7, { duration: 1 });
+                    const popupContent = `
+                        <div class="popup-content">
+                            <h3>${state} (${ageGroup === 'all' ? 'All Ages' : ageGroup})</h3>
+                            <p>Affected Rate: ${metrics.affected.toFixed(2)}%</p>
+                            <p>Vaccination Impact: ${metrics.vaccination.toFixed(2)}%</p>
+                            <p>Cure Rate: ${metrics.cure.toFixed(2)}%</p>
+                            <p>Deaths: ${metrics.deaths.toLocaleString()}</p>
+                        </div>
+                    `;
+                    circle.bindPopup(popupContent).openPopup();
+                });
+
+                heatmapLayers.push(circle);
+            });
+
+            updateInsights(metric, ageGroup);
+        }
+
+        window.onload = function () {
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+            } else {
+                loadCSVData();
+            }
+        };
+    </script>
+</body>
+</html>

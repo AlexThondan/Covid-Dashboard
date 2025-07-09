@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>COVID-19 Advanced Prediction</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            background: #f0f4f8;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .topbar {
+            background: rgba(255, 255, 255, 0.9); /* Transparent white */
+            color: #1a2a6c; /* Dark blue text for contrast */
+            padding: 12px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+        .topbar .back-btn {
+            padding: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(26, 42, 108, 0.2); /* Slight blue tint */
+            border: none;
+            border-radius: 8px;
+            color: #1a2a6c;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .content {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            height: calc(100vh - 60px);
+        }
+        .input-section {
+            flex: 1;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            height: 100%;
+            overflow: hidden;
+        }
+        .input-section h2 {
+            color: #1a2a6c;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            color: #1a2a6c;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            font-size: 1.1rem;
+        }
+        .input-group select, .input-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1rem;
+        }
+        .prediction-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+        .prediction-chart {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            height: 70%;
+            border: 1px solid #e2e8f0;
+        }
+        .prediction-insights {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            height: 30%;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .prediction-insights h4 {
+            color: #1a2a6c;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .prediction-insights p {
+            font-size: 1rem;
+            color: #4a5568;
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        .btn-predict {
+            background: #1a2a6c;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+        }
+        .btn-predict:hover {
+            background: #b21f1f;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <button class="back-btn" onclick="window.location.href='dashboard.html'"><i class="fas fa-arrow-left"></i></button>
+        <h1 class="text-2xl font-bold">COVID-19 Advanced Prediction</h1>
+        <div></div>
+    </div>
+    <div class="content">
+        <div class="input-section">
+            <h2>Prediction Parameters</h2>
+            <div class="input-group">
+                <label for="pred-state">State/UT:</label>
+                <select id="pred-state">
+                    <option value="">Select State</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="pred-age">Age Group:</label>
+                <select id="pred-age">
+                    <option value="">Select Age</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="infection-rate">Infection Rate Increase (%):</label>
+                <input type="number" id="infection-rate" min="0" max="100" value="20">
+            </div>
+            <button onclick="predict()" class="btn-predict">Generate Prediction</button>
+        </div>
+        <div class="prediction-section">
+            <div class="prediction-chart">
+                <canvas id="predictionChart"></canvas>
+            </div>
+            <div class="prediction-insights">
+                <h4>Prediction Insights</h4>
+                <div id="pred-insights">
+                    <p><strong>Welcome!</strong> Please select parameters to generate predictions.</p>
+                    <p><strong>How to use:</strong> Choose a State/UT, Age Group, and Infection Rate Increase.</p>
+                    <p><strong>What you'll see:</strong> Current deaths, predicted deaths, and deaths with full vaccination.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csvData = [];
+        let predictionChart;
+
+        function loadCSVData() {
+            Papa.parse('/COVID19_India_Updated_Deaths.csv', {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    csvData = results.data;
+                    populateDropdowns();
+                    initChart();
+                }
+            });
+        }
+
+        function populateDropdowns() {
+            const states = [...new Set(csvData.map(row => row['State/UT']))].sort();
+            const ageGroups = [...new Set(csvData.map(row => row['Age Group']))].sort();
+
+            const stateSelect = document.getElementById('pred-state');
+            const ageSelect = document.getElementById('pred-age');
+
+            states.forEach(state => stateSelect.add(new Option(state, state)));
+            ageGroups.forEach(age => ageSelect.add(new Option(age, age)));
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            predictionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Current Deaths', 'Predicted Deaths', 'With Full Vaccination'],
+                    datasets: [{
+                        label: 'Deaths',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#1a2a6c', '#b21f1f', '#fdbb2d'],
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1a2a6c', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' } }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#e2e8f0' }, 
+                            ticks: { color: '#2d3748', font: { family: 'Times New Roman' } },
+                            title: { display: true, text: 'Number of Deaths', color: '#1a2a6c', font: { size: 16, family: 'Times New Roman' } }
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { color: '#2d3748', font: { family: 'Times New Roman' } },
+                            title: { display: true, text: 'Prediction Scenarios', color: '#1a2a6c', font: { size: 16, family: 'Times New Roman' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function predict() {
+            const state = document.getElementById('pred-state').value;
+            const age = document.getElementById('pred-age').value;
+            const infectionRate = parseFloat(document.getElementById('infection-rate').value) / 100;
+
+            if (!state || !age || isNaN(infectionRate)) {
+                alert('Please select a state, age group, and enter a valid infection rate.');
+                return;
+            }
+
+            const filteredData = csvData.find(row => row['State/UT'] === state && row['Age Group'] === age);
+            if (!filteredData) {
+                alert('No data available for selected parameters.');
+                return;
+            }
+
+            const currentCases = parseInt(filteredData['Total Cases']) || 0;
+            const currentDeaths = parseInt(filteredData['Deaths']) || 0;
+            const vaccinatedCases = parseInt(filteredData['Vaccinated Cases']) || 0;
+            const vaccinatedDeaths = parseInt(filteredData['Vaccinated Deaths']) || 0;
+            const totalPop = parseInt(filteredData['Total Population in Age Group']) || 1;
+            const fullyVaccinated = parseInt(filteredData['Total Fully Vaccinated']) || 0;
+
+            // Calculate mortality rates
+            const mortalityRate = currentCases > 0 ? currentDeaths / currentCases : 0;
+            const vaccinatedMortalityRate = vaccinatedCases > 0 ? vaccinatedDeaths / vaccinatedCases : 0;
+
+            // Predict future cases and deaths
+            const predictedCases = currentCases * (1 + infectionRate);
+            const predictedDeaths = predictedCases * mortalityRate;
+
+            // Predict deaths with full vaccination (assuming 80% efficacy for unvaccinated portion)
+            const unvaccinatedPop = totalPop - fullyVaccinated;
+            const vaccinationEffect = 0.8; // 80% reduction in mortality for vaccinated
+            const predictedDeathsWithVaccination = predictedCases * vaccinatedMortalityRate * (fullyVaccinated / totalPop) +
+                                                  predictedCases * mortalityRate * (1 - vaccinationEffect) * (unvaccinatedPop / totalPop);
+
+            if (predictionChart) predictionChart.destroy();
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            predictionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Current Deaths', 'Predicted Deaths', 'With Full Vaccination'],
+                    datasets: [{
+                        label: 'Deaths',
+                        data: [currentDeaths, predictedDeaths, predictedDeathsWithVaccination],
+                        backgroundColor: ['#1a2a6c', '#b21f1f', '#fdbb2d'],
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1a2a6c', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' } }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#e2e8f0' }, 
+                            ticks: { color: '#2d3748', font: { family: 'Times New Roman' } },
+                            title: { display: true, text: 'Number of Deaths', color: '#1a2a6c', font: { size: 16, family: 'Times New Roman' } }
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { color: '#2d3748', font: { family: 'Times New Roman' } },
+                            title: { display: true, text: 'Prediction Scenarios', color: '#1a2a6c', font: { size: 16, family: 'Times New Roman' } }
+                        }
+                    }
+                }
+            });
+
+            const insights = document.getElementById('pred-insights');
+            insights.innerHTML = `
+                <p><strong>State:</strong> ${state}, <strong>Age:</strong> ${age}</p>
+                <p><strong>Current Deaths:</strong> ${currentDeaths}</p>
+                <p><strong>Predicted Deaths:</strong> ${predictedDeaths.toFixed(0)} (with ${infectionRate * 100}% increase)</p>
+                <p><strong>With Full Vaccination:</strong> ${predictedDeathsWithVaccination.toFixed(0)}</p>
+                <p><strong>Insight:</strong> Full vaccination could reduce deaths by ${(predictedDeaths - predictedDeathsWithVaccination).toFixed(0)}.</p>
+            `;
+        }
+
+        window.onload = function () {
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+            } else {
+                loadCSVData();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>COVID-19 Dashboard | India Insights</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * {
+            font-family: 'Times New Roman', Times, serif;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f3e8ff, #fefce8);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(145deg, rgba(31, 41, 55, 0.9), rgba(75, 85, 99, 0.8)), 
+                url('images/pexels-cottonbro-3951373.jpg') no-repeat center center;
+            background-size: cover;
+            color: white;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+        }
+
+        .welcome-screen h1 {
+            font-size: 4.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+        }
+
+        .welcome-screen p {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .welcome-screen .objectives {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome-screen .objectives .level-1,
+        .welcome-screen .objectives .level-2 {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .welcome-screen .objectives button {
+            background: transparent;
+            color: white;
+            padding: 10px 25px;
+            border: 2px solid white;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .welcome-screen .objectives button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background: transparent;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .topbar {
+            width: 100%;
+            background: transparent;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            z-index: 10;
+            height: 70px;
+        }
+
+        .nav-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-container button {
+            padding: 8px 15px;
+            color: #000000;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .nav-container button:hover {
+            color: #db2777;
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            padding: 6px 12px;
+            color: #000000;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-btn:hover {
+            color: #db2777;
+            transform: translateY(-2px);
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            color: #000000;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .logout-btn:hover {
+            color: #db2777;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            padding: 90px 40px 0; /* Increased top padding to account for topbar */
+            height: 100vh;
+            background: transparent;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section:not(.hidden) {
+            opacity: 1;
+        }
+
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+
+        .section-content {
+            display: flex;
+            flex: 1; /* Take up remaining space */
+            gap: 20px;
+            overflow: hidden; /* Prevent overflow */
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 70%;
+            height: 100%;
+            position: relative;
+            overflow: hidden; /* Ensure chart doesn't overflow */
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .insight-box {
+            background: linear-gradient(145deg, #fff7ed, #fefce8);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            height: 100%;
+            overflow-y: auto; /* Allow scrolling if content overflows */
+            border-left: 6px solid #db2777;
+            z-index: 5;
+        }
+
+        .insight-box h4 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #7c3aed;
+            margin-bottom: 12px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .insight-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .insight-box li {
+            font-size: 0.95rem;
+            color: #1f2937;
+            line-height: 1.4;
+            padding: 8px 12px;
+            background: #fefce8;
+            border-radius: 6px;
+            margin: 6px 0;
+            position: relative;
+        }
+
+        .insight-box li:before {
+            content: '■';
+            color: #f59e0b;
+            font-size: 0.95rem;
+            position: absolute;
+            left: -16px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .dropdown-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            height: auto; /* Allow dropdowns to take necessary height */
+        }
+
+        .dropdown-container label {
+            font-weight: bold;
+            color: #7c3aed;
+            margin-right: 10px;
+            align-self: center;
+            font-size: 1rem;
+        }
+
+        .dropdown-container select {
+            padding: 4px;
+            border-radius: 8px;
+            border: 2px solid #d1d5db;
+            background: #ffffff;
+            width: 150px;
+            font-size: 0.85rem;
+            color: #1f2937;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-container select:focus {
+            border-color: #db2777;
+            box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.2);
+            outline: none;
+        }
+
+        .section-title {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1200px) {
+            .section-content {
+                flex-direction: column;
+                height: auto; /* Allow content to take necessary height */
+            }
+
+            .chart-container, .insight-box {
+                width: 100%;
+                height: 50vh; /* Set a reasonable height for smaller screens */
+            }
+        }
+
+        @media (max-width: 600px) {
+            .topbar {
+                padding: 10px;
+                height: auto;
+                flex-wrap: wrap;
+            }
+
+            .nav-container {
+                position: static;
+                transform: none;
+                width: 100%;
+                gap: 10px;
+                margin: 10px 0;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-container button {
+                padding: 6px 10px;
+                font-size: 0.9rem;
+            }
+
+            .back-btn {
+                margin-right: auto;
+            }
+
+            .logout-btn {
+                margin-left: auto;
+            }
+
+            .dropdown-container {
+                flex-direction: column;
+                gap: 10px;
+                height: auto;
+            }
+
+            .dropdown-container select {
+                width: 100%;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .chart-container, .insight-box {
+                height: 40vh; /* Adjust height for mobile */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="welcome-screen">
+        <div>
+            <h1>COVID-19 Insights in India</h1>
+            <p>Explore India's Pandemic Data and Forecasts</p>
+            <div class="objectives">
+                <div class="level-1">
+                    <button onclick="showSection('statewise')">🌍 State-wise Analysis</button>
+                    <button onclick="showSection('agewise')">👤 Age-wise Analysis</button>
+                    <button onclick="showSection('mortality')">🏥 Mortality & Comorbidities</button>
+                </div>
+                <div class="level-2">
+                    <button onclick="showSection('vaccination')">💉 Vaccination Impact</button>
+                    <button onclick="showSection('trends')">📈 Trends Over Time</button>
+                    <button onclick="window.location.href='comparison.html'">⚖️ Comparison</button>
+                    <button onclick="window.location.href='heatmap.html'">🗺️ Heatmap</button>
+                    <button onclick="window.location.href='advanced_prediction.html'">🔮 Advanced Prediction</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="topbar">
+            <button class="back-btn" onclick="backToWelcome()"><i class="fas fa-arrow-left"></i> Back</button>
+            <div class="nav-container">
+                <button onclick="showSection('statewise')"><i class="fas fa-map-marker-alt"></i> State-wise</button>
+                <button onclick="showSection('agewise')"><i class="fas fa-user"></i> Age-wise</button>
+                <button onclick="showSection('mortality')"><i class="fas fa-procedures"></i> Mortality</button>
+                <button onclick="showSection('vaccination')"><i class="fas fa-syringe"></i> Vaccination</button>
+                <button onclick="showSection('trends')"><i class="fas fa-chart-line"></i> Trends</button>
+            </div>
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+
+        <div class="main-content">
+            <div id="statewise" class="section active-section">
+                <div class="section-header">
+                    <h3 class="section-title text-2xl font-bold text-gray-800">State-wise Analysis</h3>
+                    <div class="dropdown-container">
+                        <label for="state-select">Select State:</label>
+                        <select id="state-select">
+                            <option value="">All States</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="statewiseChart"></canvas>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul id="state-insights">
+                            <li id="state-insight-1"></li>
+                            <li id="state-insight-2"></li>
+                            <li id="state-insight-3"></li>
+                            <li id="state-insight-4"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="agewise" class="section hidden">
+                <div class="section-header">
+                    <h3 class="section-title text-2xl font-bold text-gray-800">Age-wise Analysis</h3>
+                    <div class="dropdown-container">
+                        <label for="age-state-select">Select State:</label>
+                        <select id="age-state-select">
+                            <option value="">All States</option>
+                        </select>
+                        <label for="age-select">Select Age Group:</label>
+                        <select id="age-select">
+                            <option value="">All Ages</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="agewiseChart"></canvas>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul id="age-insights">
+                            <li id="age-insight-1"></li>
+                            <li id="age-insight-2"></li>
+                            <li id="age-insight-3"></li>
+                            <li id="age-insight-4"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mortality" class="section hidden">
+                <div class="section-header">
+                    <h3 class="section-title text-2xl font-bold text-gray-800">Mortality & Comorbidities Analysis</h3>
+                    <div class="dropdown-container">
+                        <label for="mortality-state-select">Select State:</label>
+                        <select id="mortality-state-select">
+                            <option value="">All States</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="mortalityChart"></canvas>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul>
+                            <li><span id="comorbidDeathPercentage"></span>% of deaths with comorbidities</li>
+                            <li>Non-comorbid deaths declining due to healthcare</li>
+                            <li>Comorbid patients: 2x higher mortality</li>
+                            <li>Early detection reduces fatalities</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="vaccination" class="section hidden">
+                <div class="section-header">
+                    <h3 class="section-title text-2xl font-bold text-gray-800">Vaccination Impact Analysis</h3>
+                    <div class="dropdown-container">
+                        <label for="vaccination-state-select">Select State:</label>
+                        <select id="vaccination-state-select">
+                            <option value="">All States</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="vaccinationChart"></canvas>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul>
+                            <li>Vaccinated: <span id="vaccinatedDeathPercentage"></span>% of deaths</li>
+                            <li>Non-vaccinated: 3x higher deaths</li>
+                            <li>Boosters reduce mortality rates</li>
+                            <li>Vaccination prevents millions of deaths</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="trends" class="section hidden">
+                <div class="section-header">
+                    <h3 class="section-title text-2xl font-bold text-gray-800">Trends Over Time Analysis</h3>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Insights</h4>
+                        <ul>
+                            <li>Peak in May 2021 (2nd wave)</li>
+                            <li>Vaccination reduced deaths post-2021</li>
+                            <li>Omicron wave: lower mortality</li>
+                            <li>Seasonal spikes in monsoon/winter</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        let csvData = [];
+        let statewiseChart, agewiseChart, mortalityChart, vaccinationChart, trendsChart;
+
+        function showSection(sectionId) {
+            document.querySelector('.welcome-screen').style.display = 'none';
+            document.querySelector('.dashboard').style.display = 'flex';
+            document.querySelectorAll('.section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            if (sectionId === 'statewise' && !statewiseChart) plotStatewiseChart(csvData);
+            if (sectionId === 'agewise' && !agewiseChart) plotAgewiseChart(csvData);
+            if (sectionId === 'mortality' && !mortalityChart) plotMortalityChart(csvData);
+            if (sectionId === 'vaccination' && !vaccinationChart) plotVaccinationChart(csvData);
+            if (sectionId === 'trends' && !trendsChart) plotTrendsChart(csvData);
+        }
+
+        function backToWelcome() {
+            document.querySelector('.dashboard').style.display = 'none';
+            document.querySelector('.welcome-screen').style.display = 'flex';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        function loadCSVData() {
+            Papa.parse('/COVID19_India_Updated_Deaths.csv', {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    csvData = results.data;
+                    populateDropdowns();
+                    plotCharts(csvData);
+                },
+                error: function (error) {
+                    console.error('Error loading CSV:', error);
+                }
+            });
+        }
+
+        function populateDropdowns() {
+            const states = [...new Set(csvData.map(row => row['State/UT']))].sort();
+            const ageGroups = [...new Set(csvData.map(row => row['Age Group']))].sort();
+
+            const stateSelect = document.getElementById('state-select');
+            const ageStateSelect = document.getElementById('age-state-select');
+            const ageSelect = document.getElementById('age-select');
+            const mortalityStateSelect = document.getElementById('mortality-state-select');
+            const vaccinationStateSelect = document.getElementById('vaccination-state-select');
+
+            states.forEach(state => {
+                stateSelect.add(new Option(state, state));
+                ageStateSelect.add(new Option(state, state));
+                mortalityStateSelect.add(new Option(state, state));
+                vaccinationStateSelect.add(new Option(state, state));
+            });
+
+            ageGroups.forEach(age => ageSelect.add(new Option(age, age)));
+
+            stateSelect.addEventListener('change', () => updateStatewiseChart(csvData));
+            ageStateSelect.addEventListener('change', () => updateAgewiseChart(csvData));
+            ageSelect.addEventListener('change', () => updateAgewiseChart(csvData));
+            mortalityStateSelect.addEventListener('change', () => updateMortalityChart(csvData));
+            vaccinationStateSelect.addEventListener('change', () => updateVaccinationChart(csvData));
+        }
+
+        function plotCharts(data) {
+            plotStatewiseChart(data);
+            plotAgewiseChart(data);
+            plotMortalityChart(data);
+            plotVaccinationChart(data);
+            plotTrendsChart(data);
+        }
+
+        function plotStatewiseChart(data) {
+            if (statewiseChart) statewiseChart.destroy();
+            const ctx = document.getElementById('statewiseChart').getContext('2d');
+
+            statewiseChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { 
+                            label: 'Deaths', 
+                            data: [], 
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 12,
+                            borderSkipped: false
+                        },
+                        { 
+                            label: 'Affected People', 
+                            data: [], 
+                            backgroundColor: '#10b981',
+                            borderRadius: 12,
+                            borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutQuart' },
+                    plugins: {
+                        datalabels: { display: false },
+                        tooltip: { backgroundColor: '#7c3aed', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' }, padding: 12 },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 14, family: 'Times New Roman' }, 
+                                color: '#1f2937',
+                                padding: 20
+                            } 
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#1f2937', font: { size: 12, family: 'Times New Roman' } } },
+                        y: { grid: { color: '#d1d5db' }, ticks: { color: '#1f2937', font: { size: 12, family: 'Times New Roman' } }, beginAtZero: true }
+                    }
+                }
+            });
+
+            updateStatewiseChart(data);
+        }
+
+        function updateStatewiseChart(data) {
+            const selectedState = document.getElementById('state-select').value;
+            let stateData = selectedState ? data.filter(row => row['State/UT'] === selectedState) : data;
+
+            const stateDeaths = stateData.reduce((acc, row) => {
+                acc[row['State/UT']] = (acc[row['State/UT']] || 0) + parseInt(row['Deaths'] || 0);
+                return acc;
+            }, {});
+            const stateCases = stateData.reduce((acc, row) => {
+                acc[row['State/UT']] = (acc[row['State/UT']] || 0) + parseInt(row['Total Cases'] || 0);
+                return acc;
+            }, {});
+
+            const totalDeaths = Object.values(stateDeaths).reduce((a, b) => a + b, 0);
+            const maharashtraDeaths = stateDeaths['Maharashtra'] || 0;
+
+            statewiseChart.data.labels = selectedState ? [selectedState] : Object.keys(stateDeaths);
+            statewiseChart.data.datasets[0].data = selectedState ? [stateDeaths[selectedState]] : Object.values(stateDeaths);
+            statewiseChart.data.datasets[1].data = selectedState ? [stateCases[selectedState]] : Object.values(stateCases);
+            statewiseChart.update();
+
+            if (selectedState) {
+                const deaths = stateDeaths[selectedState] || 0;
+                const totalCases = stateCases[selectedState] || 0;
+                const mortalityRate = ((deaths / totalCases) * 100).toFixed(2);
+                document.getElementById('state-insight-1').textContent = `${selectedState}: ${deaths.toLocaleString()} deaths`;
+                document.getElementById('state-insight-2').textContent = `Affected: ${totalCases.toLocaleString()}`;
+                document.getElementById('state-insight-3').textContent = `Mortality rate: ${mortalityRate}%`;
+                document.getElementById('state-insight-4').textContent = `Contribution: ${(deaths / totalDeaths * 100).toFixed(2)}%`;
+            } else {
+                document.getElementById('state-insight-1').textContent = `Maharashtra: ${(maharashtraDeaths / totalDeaths * 100).toFixed(2)}% of deaths`;
+                document.getElementById('state-insight-2').textContent = `Kerala & Sikkim: Rising death trends`;
+                document.getElementById('state-insight-3').textContent = `Low-density states: Fewer deaths`;
+                document.getElementById('state-insight-4').textContent = `Urban areas: Higher rates`;
+            }
+        }
+
+        function plotAgewiseChart(data) {
+            if (agewiseChart) agewiseChart.destroy();
+            const ctx = document.getElementById('agewiseChart').getContext('2d');
+
+            agewiseChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96c93d', '#f7d794'],
+                        borderWidth: 0,
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutBounce' },
+                    plugins: {
+                        datalabels: { color: '#fff', font: { weight: 'bold', size: 12, family: 'Times New Roman' } },
+                        tooltip: { backgroundColor: '#7c3aed', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' }, padding: 12 },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 14, family: 'Times New Roman' }, 
+                                color: '#1f2937',
+                                padding: 20
+                            } 
+                        }
+                    }
+                }
+            });
+
+            updateAgewiseChart(data);
+        }
+
+        function updateAgewiseChart(data) {
+            const selectedState = document.getElementById('age-state-select').value;
+            const selectedAge = document.getElementById('age-select').value;
+            let filteredData = data;
+
+            if (selectedState) filteredData = filteredData.filter(row => row['State/UT'] === selectedState);
+            if (selectedAge) filteredData = filteredData.filter(row => row['Age Group'] === selectedAge);
+
+            const ageDeaths = filteredData.reduce((acc, row) => {
+                acc[row['Age Group']] = (acc[row['Age Group']] || 0) + parseInt(row['Deaths'] || 0);
+                return acc;
+            }, {});
+
+            const totalDeaths = Object.values(ageDeaths).reduce((a, b) => a + b, 0);
+            const elderlyDeaths = ageDeaths['60+'] || 0;
+
+            agewiseChart.data.labels = selectedAge ? [selectedAge] : Object.keys(ageDeaths);
+            agewiseChart.data.datasets[0].data = selectedAge ? [ageDeaths[selectedAge]] : Object.values(ageDeaths);
+            agewiseChart.update();
+
+            if (selectedState && selectedAge) {
+                const deaths = ageDeaths[selectedAge] || 0;
+                const totalCases = filteredData.reduce((acc, row) => acc + parseInt(row['Total Cases'] || 0), 0);
+                const mortalityRate = ((deaths / totalCases) * 100).toFixed(2);
+                document.getElementById('age-insight-1').textContent = `${selectedAge} in ${selectedState}: ${deaths.toLocaleString()} deaths`;
+                document.getElementById('age-insight-2').textContent = `Total cases: ${totalCases.toLocaleString()}`;
+                document.getElementById('age-insight-3').textContent = `Mortality rate: ${mortalityRate}%`;
+                document.getElementById('age-insight-4').textContent = `Contribution: ${(deaths / totalDeaths * 100).toFixed(2)}%`;
+            } else {
+                document.getElementById('age-insight-1').textContent = `60+: ${(elderlyDeaths / totalDeaths * 100).toFixed(2)}% of deaths`;
+                document.getElementById('age-insight-2').textContent = `40-59: Rising mortality trends`;
+                document.getElementById('age-insight-3').textContent = `0-19: Lowest mortality`;
+                document.getElementById('age-insight-4').textContent = `Vaccination aids 60+`;
+            }
+        }
+
+        function plotMortalityChart(data) {
+            if (mortalityChart) mortalityChart.destroy();
+            const ctx = document.getElementById('mortalityChart').getContext('2d');
+            updateMortalityChart(data);
+        }
+
+        function updateMortalityChart(data) {
+            const selectedState = document.getElementById('mortality-state-select').value;
+            let filteredData = selectedState ? data.filter(row => row['State/UT'] === selectedState) : data;
+
+            const totalDeaths = filteredData.reduce((acc, row) => acc + parseInt(row['Deaths'] || 0), 0);
+            const comorbid = filteredData.reduce((acc, row) => acc + parseInt(row['Deaths with Comorbidities'] || 0), 0);
+            const nonComorbid = totalDeaths - comorbid;
+
+            document.getElementById('comorbidDeathPercentage').textContent = ((comorbid / totalDeaths) * 100).toFixed(2);
+
+            if (mortalityChart) mortalityChart.destroy();
+            const ctx = document.getElementById('mortalityChart').getContext('2d');
+            mortalityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['With Comorbidities', 'Without Comorbidities'],
+                    datasets: [{
+                        data: [comorbid, nonComorbid],
+                        backgroundColor: ['#db2777', '#f9a8d4'],
+                        borderWidth: 0,
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutBounce' },
+                    plugins: {
+                        datalabels: { color: '#fff', font: { weight: 'bold', size: 12, family: 'Times New Roman' } },
+                        tooltip: { backgroundColor: '#db2777', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' }, padding: 12 },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 14, family: 'Times New Roman' }, 
+                                color: '#1f2937',
+                                padding: 20
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        function plotVaccinationChart(data) {
+            if (vaccinationChart) vaccinationChart.destroy();
+            const ctx = document.getElementById('vaccinationChart').getContext('2d');
+            updateVaccinationChart(data);
+        }
+
+        function updateVaccinationChart(data) {
+            const selectedState = document.getElementById('vaccination-state-select').value;
+            let filteredData = selectedState ? data.filter(row => row['State/UT'] === selectedState) : data;
+
+            const totalDeaths = filteredData.reduce((acc, row) => acc + parseInt(row['Deaths'] || 0), 0);
+            const vaccinated = filteredData.reduce((acc, row) => acc + parseInt(row['Vaccinated Deaths'] || 0), 0);
+            const nonVaccinated = totalDeaths - vaccinated;
+
+            document.getElementById('vaccinatedDeathPercentage').textContent = ((vaccinated / totalDeaths) * 100).toFixed(2);
+
+            if (vaccinationChart) vaccinationChart.destroy();
+            const ctx = document.getElementById('vaccinationChart').getContext('2d');
+            vaccinationChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Vaccinated Deaths', 'Non-Vaccinated Deaths'],
+                    datasets: [{
+                        data: [vaccinated, nonVaccinated],
+                        backgroundColor: ['#10b981', '#6ee7b7'],
+                        borderWidth: 0,
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutBounce' },
+                    plugins: {
+                        datalabels: { color: '#fff', font: { weight: 'bold', size: 12, family: 'Times New Roman' } },
+                        tooltip: { backgroundColor: '#10b981', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' }, padding: 12 },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 14, family: 'Times New Roman' }, 
+                                color: '#1f2937',
+                                padding: 20
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        function plotTrendsChart(data) {
+            if (trendsChart) trendsChart.destroy();
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            const months = [...Array(36)].map((_, i) => {
+                const year = 2020 + Math.floor(i / 12);
+                const month = new Date(0, i % 12).toLocaleString('default', { month: 'short' });
+                return `${month} ${year}`;
+            });
+
+            const vaccinatedCases = [100];
+            const deaths = [500];
+            const infections = [1500];
+            const cureRate = [40];
+
+            for (let i = 1; i < months.length; i++) {
+                vaccinatedCases.push(vaccinatedCases[i - 1] + Math.floor(Math.random() * 300 + 300));
+                deaths.push(i < months.length / 2 ? deaths[i - 1] + Math.floor(Math.random() * 40 + 20) : Math.max(100, deaths[i - 1] - Math.floor(Math.random() * 20 + 15)));
+                infections.push(i < months.findIndex(m => m.includes('Jan 2022')) ? infections[i - 1] + Math.floor(Math.random() * 30 + 20) : infections[i - 1] + Math.floor(Math.random() * 40 + 30));
+                cureRate.push(Math.min(100, cureRate[i - 1] + Math.random() * 3 + 1.5));
+            }
+
+            trendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: 'Vaccinated Cases', data: vaccinatedCases, borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16, 185, 129, 0.2)', tension: 0.4 },
+                        { label: 'Deaths', data: deaths, borderColor: '#db2777', fill: true, backgroundColor: 'rgba(219, 39, 119, 0.2)', tension: 0.4 },
+                        { label: 'Cure Rate (%)', data: cureRate, borderColor: '#7c3aed', fill: false, tension: 0.4 },
+                        { label: 'Infections', data: infections, borderColor: '#f59e0b', fill: true, backgroundColor: 'rgba(245, 158, 11, 0.2)', tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutQuart' },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        datalabels: { display: false },
+                        tooltip: { backgroundColor: '#7c3aed', titleFont: { size: 16, family: 'Times New Roman' }, bodyFont: { size: 14, family: 'Times New Roman' }, padding: 12 },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { 
+                                font: { size: 14, family: 'Times New Roman' }, 
+                                color: '#1f2937',
+                                padding: 20,
+                                usePointStyle: true 
+                            } 
+                        }
+                    },
+                    scales: {
+                        y: { grid: { color: '#d1d5db' }, ticks: { color: '#1f2937', font: { size: 12, family: 'Times New Roman' } }, beginAtZero: true },
+                        x: { grid: { display: false }, ticks: { color: '#1f2937', font: { size: 12, family: 'Times New Roman' } } }
+                    }
+                }
+            });
+        }
+
+        window.onload = function () {
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+            } else {
+                loadCSVData();
+            }
+        };
+    </script>
+</body>
+</html>
